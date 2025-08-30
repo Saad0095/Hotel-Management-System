@@ -1,4 +1,4 @@
-import Room from "../models/room";
+import Room from "../models/Room.js";
 
 export const createRoom = async (req, res) => {
   try {
@@ -12,7 +12,7 @@ export const createRoom = async (req, res) => {
 export const getAllRooms = async (req, res) => {
   try {
     const rooms = await Room.find();
-    if (!rooms || rooms.length)
+    if (!rooms || rooms.length === 0)
       return res.status(404).json({ message: "Roooms Not Found!" });
     res.json(rooms);
   } catch (error) {
