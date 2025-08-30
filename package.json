@@ -1,12 +1,14 @@
 {
   "name": "hotel-management-system",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "license": "MIT",
   "type":"module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "seed:services": "node seed/seedServices.js",
+    "seed:rooms": "node seed/seedRooms.js"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
