@@ -7,7 +7,8 @@ const app = express();
 connectDB();
 app.use(express.json());
 
-app.use("/api/room", roomRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/bookings", roomRoutes);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
