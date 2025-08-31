@@ -16,8 +16,8 @@ router.post("/", authenticateUser, authRole(["admin"]), upload.array("images",10
 router.put("/:id", authenticateUser, authRole(["admin"]), upload.array("images",10), updateRoom);
 router.delete("/:id", authenticateUser, authRole(["admin"]), deleteRoom);
 
-router.get("/", authenticateUser, authRole(["admin","receptionist"]), getAllRooms);
-router.get("/:id/update", authenticateUser, authRole(["admin","receptionist"]), getRoomById);
-router.get("/:id/status", authenticateUser, authRole(["admin","receptionist"]), getRoomStatus);
+router.get("/", getAllRooms);
+router.get("/:id/update", getRoomById);
+router.get("/:id/status", getRoomStatus);
 
 export default router;

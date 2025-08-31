@@ -42,12 +42,3 @@ export const authRole = (allowedRoles) => {
     next();
   };
 };
-
-// Check if user owns the resource or is admin
-export const requireOwnerOrAdmin = (req, res, next) => {
-  const resourceUserId = req.params.id;
-  if (req.user.role === "admin" || req.user._id.toString() === resourceUserId) {
-    return next();
-  }
-  res.status(403).json({ message: "Access denied!" });
-};

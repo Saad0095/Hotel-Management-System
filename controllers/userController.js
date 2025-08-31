@@ -13,11 +13,17 @@ const generateToken = (user) => {
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, address } = req.body;
+    const { name, email, password, phone, address,role } = req.body;
 
+    
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ error: "Email already registered" });
+    
+    let userRole = "customer";
+    if (role && req.user && req.user.role === "admin") {
+      userRole = role; 
+    }
 
     const user = await User.create({
       name,
@@ -25,6 +31,7 @@ export const register = async (req, res) => {
       password,
       phone,
       address,
+      role: userRole
     });
 
     const token = generateToken(user);
