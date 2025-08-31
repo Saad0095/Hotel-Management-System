@@ -1,22 +1,24 @@
 import { Router } from "express";
 import {
+  register,
+  login,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
-  getUserProfile
+  getUserProfile,
 } from "../controllers/userController.js";
-import { authenticateToken, requireAdmin } from "../middlewares/authMiddleware.js";
+import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// Admin only routes
-router.get("/", authenticateToken, requireAdmin, getAllUsers);
-router.get("/:id", authenticateToken, requireAdmin, getUserById);
-router.put("/:id", authenticateToken, requireAdmin, updateUser);
-router.delete("/:id", authenticateToken, requireAdmin, deleteUser);
+router.post("/register", register)
+router.post("/login", login)
+router.get("/", authenticateUser, authRole(["admin"]), getAllUsers);
+router.get("/:id", authenticateUser, authRole(["admin"]), getUserById);
+router.put("/:id", authenticateUser, authRole(["admin"]), updateUser);
+router.delete("/:id", authenticateUser, authRole(["admin"]), deleteUser);
 
-// User profile (authenticated users)
-router.get("/profile/me", authenticateToken, getUserProfile);
+router.get("/profile/me", authenticateUser, getUserProfile);
 
 export default router;

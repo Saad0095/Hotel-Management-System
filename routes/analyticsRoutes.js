@@ -5,12 +5,12 @@ import {
   getOccupancyRate,
   getRevenueAnalytics
 } from "../controllers/analyticsController.js";
-import { authenticateToken, requireAdmin } from "../middlewares/authMiddleware.js";
+import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
 // All analytics routes require admin access
-router.use(authenticateToken, requireAdmin);
+router.use(authenticateUser, authRole(["admin"]));
 
 router.get("/daily-bookings", getDailyBookings);
 router.get("/monthly-bookings", getMonthlyBookings);

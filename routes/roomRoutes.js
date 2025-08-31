@@ -8,14 +8,16 @@ import {
   deleteRoom,
 } from "../controllers/roomController.js";
 import upload from "../middlewares/uploadMiddleware.js";
+import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.post("/", upload.array("images",10), createRoom);
-router.get("/", getAllRooms);
-router.get("/:id/update", getRoomById);
-router.get("/:id/status", getRoomStatus);
-router.put("/:id", upload.array("images",10), updateRoom);
-router.delete("/:id", deleteRoom);
+router.post("/", authenticateUser, authRole(["admin"]), upload.array("images",10), createRoom);
+router.put("/:id", authenticateUser, authRole(["admin"]), upload.array("images",10), updateRoom);
+router.delete("/:id", authenticateUser, authRole(["admin"]), deleteRoom);
+
+router.get("/", authenticateUser, authRole(["admin","receptionist"]), getAllRooms);
+router.get("/:id/update", authenticateUser, authRole(["admin","receptionist"]), getRoomById);
+router.get("/:id/status", authenticateUser, authRole(["admin","receptionist"]), getRoomStatus);
 
 export default router;

@@ -1,19 +1,18 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 
-// Verify JWT token
-export const authenticateToken = async (req, res, next) => {
+export const authenticateUser = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({ message: "Access token required!" });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.userId).select("-password");
-    
+
     if (!user) {
       return res.status(401).json({ message: "Invalid token!" });
     }
@@ -35,28 +34,20 @@ export const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Check if user is admin
-export const requireAdmin = (req, res, next) => {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ message: "Admin access required!" });
-  }
-  next();
-};
-
-// Check if user is customer
-export const requireCustomer = (req, res, next) => {
-  if (req.user.role !== "customer") {
-    return res.status(403).json({ message: "Customer access required!" });
-  }
-  next();
+export const authRole = (allowedRoles) => {
+  return (req, res, next) => {
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Unauthorized!" });
+    }
+    next();
+  };
 };
 
 // Check if user owns the resource or is admin
-export const requireOwnerOrAdmin = (resourceUserId) => {
-  return (req, res, next) => {
-    if (req.user.role === "admin" || req.user.id === resourceUserId) {
-      return next();
-    }
-    res.status(403).json({ message: "Access denied!" });
-  };
+export const requireOwnerOrAdmin = (req, res, next) => {
+  const resourceUserId = req.params.id;
+  if (req.user.role === "admin" || req.user._id.toString() === resourceUserId) {
+    return next();
+  }
+  res.status(403).json({ message: "Access denied!" });
 };

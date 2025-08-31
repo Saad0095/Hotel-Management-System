@@ -8,21 +8,18 @@ import {
   checkIn,
   checkOut
 } from "../controllers/bookingController.js";
-import { authenticateToken, requireAdmin, requireCustomer } from "../middlewares/authMiddleware.js";
+import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// Public routes (for viewing available rooms)
 router.get("/", getAllBookings);
-
-// Customer routes
-router.post("/", authenticateToken, requireCustomer, createBooking);
 router.get("/:id", getBookingById);
 
-// Admin only routes
-router.put("/:id", authenticateToken, requireAdmin, updateBooking);
-router.delete("/:id", authenticateToken, requireAdmin, deleteBooking);
-router.post("/:id/checkin", authenticateToken, requireAdmin, checkIn);
-router.post("/:id/checkout", authenticateToken, requireAdmin, checkOut);
+router.post("/", authenticateUser, authRole(["customer","receptionist","admin"]), createBooking);
+
+router.put("/:id", authenticateUser, authRole(["admin","receptionist"]), updateBooking);
+router.delete("/:id", authenticateUser, authRole(["admin","receptionist"]), deleteBooking);
+router.post("/:id/checkin", authenticateUser, authRole(["admin","receptionist"]), checkIn);
+router.post("/:id/checkout", authenticateUser, authRole(["admin","receptionist"]), checkOut);
 
 export default router;

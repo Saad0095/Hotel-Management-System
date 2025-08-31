@@ -1,6 +1,74 @@
 import User from "../models/user.js";
+import jwt from "jsonwebtoken";
 
-// Get all users (Admin only)
+const generateToken = (user) => {
+  return jwt.sign(
+    { userId: user._id, role: user.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+};
+
+export const register = async (req, res) => {
+  try {
+    const { name, email, password, phone, address } = req.body;
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
+      return res.status(400).json({ error: "Email already registered" });
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      address,
+    });
+
+    const token = generateToken(user);
+    res.status(201).json({
+      message: "User Created Successfully!",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+
+    const token = generateToken(user);
+    res.status(200).json({
+      message: "User LoggedIn Successfully!",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -10,7 +78,6 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
-// Get user by ID (Admin only)
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
@@ -21,11 +88,10 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// Update user details (Admin only)
 export const updateUser = async (req, res) => {
   try {
     const { role, status, name, email, phone, address } = req.body;
-    
+
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found!" });
 
@@ -48,15 +114,15 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// Delete user (Admin only)
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found!" });
 
-    // Prevent admin from deleting themselves
-    if (user._id.toString() === req.user.id) {
-      return res.status(400).json({ message: "Cannot delete your own account!" });
+    if (user._id.toString() === req.user._id.toString()) {
+      return res
+        .status(400)
+        .json({ message: "Cannot delete your own account!" });
     }
 
     await User.findByIdAndDelete(req.params.id);
@@ -66,10 +132,9 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Get user profile (Own profile)
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user._id).select("-password");
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: error.message });

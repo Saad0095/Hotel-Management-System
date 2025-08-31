@@ -7,18 +7,16 @@ import {
   deleteService,
   getPopularServices
 } from "../controllers/serviceController.js";
-import { authenticateToken, requireAdmin } from "../middlewares/authMiddleware.js";
+import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// Public routes
 router.get("/", getAllServices);
 router.get("/popular", getPopularServices);
 router.get("/:id", getServiceById);
 
-// Admin only routes
-router.post("/", authenticateToken, requireAdmin, createService);
-router.put("/:id", authenticateToken, requireAdmin, updateService);
-router.delete("/:id", authenticateToken, requireAdmin, deleteService);
+router.post("/", authenticateUser, authRole(["admin"]), createService);
+router.put("/:id", authenticateUser, authRole(["admin"]), updateService);
+router.delete("/:id", authenticateUser, authRole(["admin"]), deleteService);
 
 export default router;

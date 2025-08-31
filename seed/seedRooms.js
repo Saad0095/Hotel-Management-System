@@ -1,5 +1,5 @@
 import connectDB from "../db/index.js";
-import Room from "../models/Room.js";
+import Room from "../models/room.js";
 import "dotenv/config";
 
 const seedRooms = async () => {
