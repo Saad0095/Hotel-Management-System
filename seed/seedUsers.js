@@ -1,6 +1,7 @@
 // seedUsers.js
 import connectDB from "../db/index.js";
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 
 import User from "../models/user.js";
 
@@ -26,7 +27,11 @@ const seedUsers = async () => {
       { name: "Saad", email: "saad@gmail.com", password: "123456", role: "admin" },
     ];
 
-    // Insert users (passwords will be hashed automatically by pre-save hook)
+    // Hash passwords manually before insertMany
+    for (let user of users) {
+      user.password = await bcrypt.hash(user.password, 10);
+    }
+
     const createdUsers = await User.insertMany(users);
 
     console.log(`✅ ${createdUsers.length} users seeded successfully!`);
