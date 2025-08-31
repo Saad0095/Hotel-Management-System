@@ -16,7 +16,7 @@ const userSchema = new Schema(
       enum: ["active", "inactive", "suspended"],
       default: "active",
     },
-    phone: { type: String },
+    phone: { type: String, required: true },
     address: { type: String },
     profileImage: { type: String },
   },

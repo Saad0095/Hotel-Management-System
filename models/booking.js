@@ -4,6 +4,7 @@ const bookingSchema = new Schema(
   {
     rooms: [{ type: Schema.Types.ObjectId, ref: "Room" }],
     user: { type: Schema.Types.ObjectId, ref: "User" },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
     checkInDate: { type: Date, required: true },
     checkOutDate: { type: Date, required: true },
     totalPrice: { type: Number, required: true },

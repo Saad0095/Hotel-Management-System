@@ -1,11 +1,28 @@
 import Booking from "../models/booking.js";
 import Room from "../models/room.js";
 import Service from "../models/service.js";
+import User from "../models/user.js";
 
 export const createBooking = async (req, res) => {
   try {
-    const { rooms, checkInDate, checkOutDate, extraServices } = req.body;
+    const { rooms, checkInDate, checkOutDate, extraServices, customerId } =
+      req.body;
 
+    let userId;
+    if (req.user.role == "customer") {
+      userId = req.user.id;
+    } else if (req.user.role !== "customer") {
+      if (!customerId) {
+        return res.status(400).json({
+          message: "Customer ID is required for receptionist bookings",
+        });
+      }
+      const customer = await User.findById(customerId);
+      if (!customer || customer.role !== "customer") {
+        return res.status(400).json({ message: "Invalid customer ID" });
+      }
+      userId = customerId;
+    }
     const checkIn = new Date(checkInDate);
     const checkOut = new Date(checkOutDate);
 
@@ -45,7 +62,8 @@ export const createBooking = async (req, res) => {
 
     const booking = await Booking.create({
       rooms,
-      user: req.user.id,
+      user: userId,
+      createdBy: req.user._id,
       checkInDate: checkIn,
       checkOutDate: checkOut,
       totalPrice,
@@ -64,7 +82,8 @@ export const getAllBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
       .populate("rooms", "roomNumber roomType")
-      .populate("user", "name email")
+      .populate("user", "name email phone")
+      .populate("createdBy", "name email")
       .populate("extraServices", "name price");
     res.json(bookings);
   } catch (error) {
@@ -76,7 +95,8 @@ export const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate("rooms", "roomNumber roomType")
-      .populate("user", "name email")
+      .populate("user", "name email phone")
+      .populate("createdBy", "name email")
       .populate("extraServices", "name price");
 
     if (!booking)
@@ -145,16 +165,15 @@ export const updateBooking = async (req, res) => {
     const checkIn = new Date(checkInDate || booking.checkInDate);
     const checkOut = new Date(checkOutDate || booking.checkOutDate);
 
-    const alreadyBooked = await Booking.find({
-      rooms: { $in: rooms },
+    const conflict = await Booking.findOne({
+      _id: { $ne: booking._id },
+      rooms: { $in: booking.rooms },
       checkInDate: { $lt: checkOut },
       checkOutDate: { $gt: checkIn },
     });
 
-    if (alreadyBooked.length > 0) {
-      return res
-        .status(400)
-        .json({ message: "Some rooms are already booked for these dates!" });
+    if (conflict) {
+      return res.status(400).json({ message: "Rooms are already booked for the new dates!" });
     }
 
     const roomData = await Room.find({ _id: { $in: booking.rooms } });
