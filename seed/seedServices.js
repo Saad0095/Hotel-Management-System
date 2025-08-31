@@ -1,5 +1,6 @@
 import Service from "../models/service.js";
 import connectDB from "../db/index.js";
+import "dotenv/config";
 
 const services = [
   {
