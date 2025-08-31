@@ -23,6 +23,7 @@ const seedUsers = async () => {
       { name: "Hannah", email: "hannah@example.com", password: "123456", role: "receptionist" },
       { name: "Ivan", email: "ivan@example.com", password: "123456", role: "customer" },
       { name: "Julia", email: "julia@example.com", password: "123456", role: "admin" },
+      { name: "Saad", email: "saad@gmail.com", password: "123456", role: "admin" },
     ];
 
     // Insert users (passwords will be hashed automatically by pre-save hook)
