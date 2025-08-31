@@ -25,6 +25,8 @@ const seedUsers = async () => {
       { name: "Ivan", email: "ivan@example.com", password: "123456", role: "customer" },
       { name: "Julia", email: "julia@example.com", password: "123456", role: "admin" },
       { name: "Saad", email: "saad@gmail.com", password: "123456", role: "admin" },
+      { name: "Customer", email: "customer@gmail.com", password: "123456", role: "customer" },
+      { name: "Receptionist", email: "receptionist@gmail.com", password: "123456", role: "receptionist" },
     ];
 
     // Hash passwords manually before insertMany

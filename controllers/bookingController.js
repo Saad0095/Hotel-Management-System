@@ -10,19 +10,16 @@ export const createBooking = async (req, res) => {
     const checkOut = new Date(checkOutDate);
 
     const roomData = await Room.find({ _id: { $in: rooms } });
+
     if (roomData.length !== rooms.length) {
       return res.status(404).json({ message: "One or more rooms not found!" });
     }
 
-    const alreadyBooked = await Booking.aggregate([
-      {
-        $match: {
-          rooms: { $in: rooms },
-          checkInDate: { $lt: checkOut },
-          checkOutDate: { $gt: checkIn },
-        },
-      },
-    ]);
+    const alreadyBooked = await Booking.find({
+      rooms: { $in: rooms },
+      checkInDate: { $lt: checkOut },
+      checkOutDate: { $gt: checkIn },
+    });
 
     if (alreadyBooked.length > 0) {
       return res
@@ -126,7 +123,10 @@ export const checkOut = async (req, res) => {
     booking.status = "checked-out";
     await booking.save();
 
-    await Room.updateMany({ _id: { $in: booking.rooms } }, { status: "available" });
+    await Room.updateMany(
+      { _id: { $in: booking.rooms } },
+      { status: "available" }
+    );
 
     res.json({ message: "Check-out successful!", booking });
   } catch (error) {
@@ -145,18 +145,18 @@ export const updateBooking = async (req, res) => {
     const checkIn = new Date(checkInDate || booking.checkInDate);
     const checkOut = new Date(checkOutDate || booking.checkOutDate);
 
-    const conflict = await Booking.findOne({
-      _id: { $ne: booking._id },
-      rooms: { $in: booking.rooms },
+    const alreadyBooked = await Booking.find({
+      rooms: { $in: rooms },
       checkInDate: { $lt: checkOut },
       checkOutDate: { $gt: checkIn },
     });
 
-    if (conflict) {
-      return res.status(400).json({ message: "Rooms are already booked for the new dates!" });
+    if (alreadyBooked.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "Some rooms are already booked for these dates!" });
     }
 
-    // 🔑 Recalculate price
     const roomData = await Room.find({ _id: { $in: booking.rooms } });
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
 
@@ -195,7 +195,6 @@ export const updateBooking = async (req, res) => {
   }
 };
 
-
 export const deleteBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -203,7 +202,10 @@ export const deleteBooking = async (req, res) => {
       return res.status(404).json({ message: "Booking not found!" });
 
     if (["confirmed", "checked-in"].includes(booking.status)) {
-      await Room.updateMany({ _id: { $in: booking.rooms } }, { status: "available" });
+      await Room.updateMany(
+        { _id: { $in: booking.rooms } },
+        { status: "available" }
+      );
     }
 
     await Booking.findByIdAndDelete(req.params.id);

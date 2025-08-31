@@ -19,7 +19,7 @@ router.post("/", authenticateUser, authRole(["customer","receptionist","admin"])
 
 router.put("/:id", authenticateUser, authRole(["admin","receptionist"]), updateBooking);
 router.delete("/:id", authenticateUser, authRole(["admin","receptionist"]), deleteBooking);
-router.post("/:id/checkin", authenticateUser, authRole(["admin","receptionist"]), checkIn);
-router.post("/:id/checkout", authenticateUser, authRole(["admin","receptionist"]), checkOut);
+router.patch("/:id/checkin", authenticateUser, authRole(["admin","receptionist"]), checkIn);
+router.patch("/:id/checkout", authenticateUser, authRole(["admin","receptionist"]), checkOut);
 
 export default router;
