@@ -2,6 +2,12 @@ import Booking from "../models/booking.js";
 import Room from "../models/room.js";
 import Service from "../models/service.js";
 import User from "../models/user.js";
+import {
+  sendBookingConfirmation,
+  sendCancelBookingEmail,
+  sendCheckInEmail,
+  sendCheckOutEmail,
+} from "../utils/nodemailer.js";
 
 export const createBooking = async (req, res) => {
   try {
@@ -51,8 +57,9 @@ export const createBooking = async (req, res) => {
       0
     );
 
+    let services = [];
     if (extraServices && extraServices.length > 0) {
-      const services = await Service.find({ _id: { $in: extraServices } });
+      services = await Service.find({ _id: { $in: extraServices } });
       const servicesPrice = services.reduce(
         (sum, service) => sum + service.price,
         0
@@ -71,6 +78,14 @@ export const createBooking = async (req, res) => {
     });
 
     await Room.updateMany({ _id: { $in: rooms } }, { status: "booked" });
+
+    await sendBookingConfirmation(
+      booking.user.email,
+      booking,
+      booking.user,
+      roomData,
+      services
+    );
 
     res.status(201).json({ message: "Booking created successfully!", booking });
   } catch (error) {
@@ -183,6 +198,7 @@ export const checkIn = async (req, res) => {
 
     booking.status = "checked-in";
     await booking.save();
+    await sendCheckInEmail(booking.user.email, booking, booking.user);
 
     res.json({ message: "Check-in successful!", booking });
   } catch (error) {
@@ -210,6 +226,8 @@ export const checkOut = async (req, res) => {
       { status: "available" }
     );
 
+    await sendCheckOutEmail(booking.user.email, booking, booking.user);
+
     res.json({ message: "Check-out successful!", booking });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -235,6 +253,8 @@ export const cancelBooking = async (req, res) => {
       { _id: { $in: booking.rooms } },
       { status: "available" }
     );
+
+    await sendCancelBookingEmail(booking.user.email, booking, booking.user);
 
     res.json({ message: "Booking cancelled successfully!", booking });
   } catch (error) {
