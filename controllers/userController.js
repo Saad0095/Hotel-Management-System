@@ -13,16 +13,15 @@ const generateToken = (user) => {
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, address,role } = req.body;
+    const { name, email, password, phone, address, role } = req.body;
 
-    
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ error: "Email already registered" });
-    
+
     let userRole = "customer";
     if (role && req.user && req.user.role === "admin") {
-      userRole = role; 
+      userRole = role;
     }
 
     const user = await User.create({
@@ -31,10 +30,9 @@ export const register = async (req, res) => {
       password,
       phone,
       address,
-      role: userRole
+      role: userRole,
     });
 
-    const token = generateToken(user);
     res.status(201).json({
       message: "User Created Successfully!",
       user: {
@@ -43,7 +41,7 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
       },
-      token,
+      token: req.user ? null : generateToken(user),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

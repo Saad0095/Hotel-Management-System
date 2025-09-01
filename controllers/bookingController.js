@@ -107,6 +107,68 @@ export const getBookingById = async (req, res) => {
   }
 };
 
+export const updateBooking = async (req, res) => {
+  try {
+    const { checkInDate, checkOutDate, extraServices } = req.body;
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking)
+      return res.status(404).json({ message: "Booking not found!" });
+
+    const checkIn = new Date(checkInDate || booking.checkInDate);
+    const checkOut = new Date(checkOutDate || booking.checkOutDate);
+
+    const conflict = await Booking.findOne({
+      _id: { $ne: booking._id },
+      rooms: { $in: booking.rooms },
+      checkInDate: { $lt: checkOut },
+      checkOutDate: { $gt: checkIn },
+    });
+
+    if (conflict) {
+      return res
+        .status(400)
+        .json({ message: "Rooms are already booked for the new dates!" });
+    }
+
+    const roomData = await Room.find({ _id: { $in: booking.rooms } });
+    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+
+    let totalPrice = roomData.reduce(
+      (sum, room) => sum + room.pricePerNight * nights,
+      0
+    );
+
+    let updatedServices = extraServices || booking.extraServices;
+    if (updatedServices && updatedServices.length > 0) {
+      const services = await Service.find({ _id: { $in: updatedServices } });
+      const servicesPrice = services.reduce(
+        (sum, service) => sum + service.price,
+        0
+      );
+      totalPrice += servicesPrice;
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      req.params.id,
+      {
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        extraServices: updatedServices,
+        totalPrice,
+      },
+      { new: true }
+    );
+
+    res.json({
+      message: "Booking updated successfully!",
+      booking: updatedBooking,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const checkIn = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -154,61 +216,27 @@ export const checkOut = async (req, res) => {
   }
 };
 
-export const updateBooking = async (req, res) => {
+export const cancelBooking = async (req, res) => {
   try {
-    const { checkInDate, checkOutDate, extraServices } = req.body;
-
     const booking = await Booking.findById(req.params.id);
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
 
-    const checkIn = new Date(checkInDate || booking.checkInDate);
-    const checkOut = new Date(checkOutDate || booking.checkOutDate);
-
-    const conflict = await Booking.findOne({
-      _id: { $ne: booking._id },
-      rooms: { $in: booking.rooms },
-      checkInDate: { $lt: checkOut },
-      checkOutDate: { $gt: checkIn },
-    });
-
-    if (conflict) {
-      return res.status(400).json({ message: "Rooms are already booked for the new dates!" });
+    if (booking.status === "checked-out") {
+      return res
+        .status(400)
+        .json({ message: "Cannot cancel a booking after check-out!" });
     }
 
-    const roomData = await Room.find({ _id: { $in: booking.rooms } });
-    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+    booking.status = "cancelled";
+    await booking.save();
 
-    let totalPrice = roomData.reduce(
-      (sum, room) => sum + room.pricePerNight * nights,
-      0
+    await Room.updateMany(
+      { _id: { $in: booking.rooms } },
+      { status: "available" }
     );
 
-    let updatedServices = extraServices || booking.extraServices;
-    if (updatedServices && updatedServices.length > 0) {
-      const services = await Service.find({ _id: { $in: updatedServices } });
-      const servicesPrice = services.reduce(
-        (sum, service) => sum + service.price,
-        0
-      );
-      totalPrice += servicesPrice;
-    }
-
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      req.params.id,
-      {
-        checkInDate: checkIn,
-        checkOutDate: checkOut,
-        extraServices: updatedServices,
-        totalPrice,
-      },
-      { new: true }
-    );
-
-    res.json({
-      message: "Booking updated successfully!",
-      booking: updatedBooking,
-    });
+    res.json({ message: "Booking cancelled successfully!", booking });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

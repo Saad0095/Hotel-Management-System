@@ -13,7 +13,7 @@ import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 const router = Router();
 
 router.post("/register", register);
-router.post("/admin/register", authenticateUser, authRole("admin"), register);
+router.post("/admin/register", authenticateUser, authRole(["admin","receptionist"]), register);
 router.post("/login", login);
 
 router.get("/profile/me", authenticateUser, getUserProfile);
