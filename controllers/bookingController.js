@@ -79,10 +79,11 @@ export const createBooking = async (req, res) => {
 
     await Room.updateMany({ _id: { $in: rooms } }, { status: "booked" });
 
+    const customer = await User.findById(userId);
     await sendBookingConfirmation(
-      booking.user.email,
+      customer.email,
       booking,
-      booking.user,
+      customer,
       roomData,
       services
     );
@@ -198,7 +199,9 @@ export const checkIn = async (req, res) => {
 
     booking.status = "checked-in";
     await booking.save();
-    await sendCheckInEmail(booking.user.email, booking, booking.user);
+
+    const customer = await User.findById(booking.user);
+    await sendCheckInEmail(customer.email, booking, customer);
 
     res.json({ message: "Check-in successful!", booking });
   } catch (error) {
@@ -226,7 +229,8 @@ export const checkOut = async (req, res) => {
       { status: "available" }
     );
 
-    await sendCheckOutEmail(booking.user.email, booking, booking.user);
+    const customer = await User.findById(booking.user);
+    await sendCheckOutEmail(customer.email, booking, customer);
 
     res.json({ message: "Check-out successful!", booking });
   } catch (error) {
@@ -254,7 +258,8 @@ export const cancelBooking = async (req, res) => {
       { status: "available" }
     );
 
-    await sendCancelBookingEmail(booking.user.email, booking, booking.user);
+    const customer = await User.findById(booking.user);
+    await sendCancelBookingEmail(customer.email, booking, customer);
 
     res.json({ message: "Booking cancelled successfully!", booking });
   } catch (error) {

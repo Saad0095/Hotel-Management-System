@@ -6,7 +6,8 @@ import {
   updateBooking, 
   deleteBooking,
   checkIn,
-  checkOut
+  checkOut,
+  cancelBooking
 } from "../controllers/bookingController.js";
 import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
@@ -21,5 +22,6 @@ router.put("/:id", authenticateUser, authRole(["admin","receptionist"]), updateB
 router.delete("/:id", authenticateUser, authRole(["admin","receptionist"]), deleteBooking);
 router.patch("/:id/checkin", authenticateUser, authRole(["admin","receptionist"]), checkIn);
 router.patch("/:id/checkout", authenticateUser, authRole(["admin","receptionist"]), checkOut);
+router.patch("/:id/cancel", authenticateUser, authRole(["customer","admin","receptionist"]), cancelBooking);
 
 export default router;
