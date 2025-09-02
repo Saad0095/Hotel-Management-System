@@ -14,6 +14,7 @@ A comprehensive backend system for hotel management built with Node.js, Express,
 
 ### ✅ Completed Modules
 - **User Authentication** (Ahmed) - Login/Register system
+
 🔄 In Progress
 - **Validation** (Ahmed) - Input validation and sanitization
 
