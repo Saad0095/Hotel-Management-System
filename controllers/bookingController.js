@@ -96,7 +96,14 @@ export const createBooking = async (req, res) => {
 
 export const getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find()
+
+    let query = {};
+
+    if (req.user.role === "customer") {
+      query.user = req.user._id;
+    }
+
+    const bookings = await Booking.find(query)
       .populate("rooms", "roomNumber roomType")
       .populate("user", "name email phone")
       .populate("createdBy", "name email")
@@ -117,6 +124,12 @@ export const getBookingById = async (req, res) => {
 
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
+    
+    
+    if (req.user.role === "customer" && booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Access denied! You can only view your own bookings." });
+    }
+    
     res.json(booking);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -130,6 +143,11 @@ export const updateBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
+    
+    // Security check: Customer can only update their own bookings
+    if (req.user.role === "customer" && booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Access denied! You can only update your own bookings." });
+    }
 
     const checkIn = new Date(checkInDate || booking.checkInDate);
     const checkOut = new Date(checkOutDate || booking.checkOutDate);
@@ -190,6 +208,10 @@ export const checkIn = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
+    
+    if (req.user.role === "customer") {
+      return res.status(403).json({ message: "Access denied! Only staff can perform check-in." });
+    }
 
     if (booking.status !== "confirmed") {
       return res
@@ -214,6 +236,11 @@ export const checkOut = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
+    
+    
+    if (req.user.role === "customer") {
+      return res.status(403).json({ message: "Access denied! Only staff can perform check-out." });
+    }
 
     if (booking.status !== "checked-in") {
       return res
@@ -243,6 +270,11 @@ export const cancelBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
+    
+    
+    if (req.user.role === "customer" && booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Access denied! You can only cancel your own bookings." });
+    }
 
     if (booking.status === "checked-out") {
       return res
@@ -272,6 +304,11 @@ export const deleteBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id);
     if (!booking)
       return res.status(404).json({ message: "Booking not found!" });
+    
+    
+    if (req.user.role === "customer" && booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Access denied! You can only delete your own bookings." });
+    }
 
     if (["confirmed", "checked-in"].includes(booking.status)) {
       await Room.updateMany(

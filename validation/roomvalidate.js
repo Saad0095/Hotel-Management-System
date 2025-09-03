@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 const createRoomSchema = Joi.object({
   roomNumber: Joi.string().required(),
@@ -10,4 +10,4 @@ const createRoomSchema = Joi.object({
   images: Joi.array().items(Joi.string().uri()).optional(),
 });
 
-module.exports = { createRoomSchema };
+export { createRoomSchema };

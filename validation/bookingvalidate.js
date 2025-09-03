@@ -1,4 +1,4 @@
-const Joi = require("joi");
+import Joi from "joi";
 
 const createBookingSchema = Joi.object({
   userId: Joi.string().required(),
@@ -8,4 +8,4 @@ const createBookingSchema = Joi.object({
   guests: Joi.number().min(1).required()
 });
 
-module.exports = { createBookingSchema };
+export { createBookingSchema };
