@@ -10,7 +10,6 @@ import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-// All analytics routes require admin access
 router.use(authenticateUser, authRole(["admin"]));
 
 router.get("/daily-bookings", getDailyBookings);

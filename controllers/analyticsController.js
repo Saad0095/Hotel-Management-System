@@ -2,7 +2,6 @@
 import Booking from "../models/booking.js";
 import Room from "../models/room.js";
 
-// Daily bookings report
 export const getDailyBookings = async (req, res) => {
   try {
     const { date } = req.query;
@@ -66,7 +65,6 @@ export const getDailyBookings = async (req, res) => {
   }
 };
 
-// Monthly bookings report
 export const getMonthlyBookings = async (req, res) => {
   try {
     const { year, month } = req.query;
@@ -112,26 +110,21 @@ export const getMonthlyBookings = async (req, res) => {
   }
 };
 
-// Occupancy rate analytics
 export const getOccupancyRate = async (req, res) => {
   try {
     const { date } = req.query;
     const targetDate = date ? new Date(date) : new Date();
     
-    // Get total rooms
     const totalRooms = await Room.countDocuments();
     
-    // Get booked rooms for the date
     const bookedRooms = await Booking.countDocuments({
       checkInDate: { $lte: targetDate },
       checkOutDate: { $gte: targetDate },
       status: { $in: ["confirmed", "checked-in"] }
     });
 
-    // Get maintenance rooms
     const maintenanceRooms = await Room.countDocuments({ status: "maintenance" });
     
-    // Calculate occupancy rate
     const availableRooms = totalRooms - bookedRooms - maintenanceRooms;
     const occupancyRate = ((bookedRooms / totalRooms) * 100).toFixed(2);
     const availabilityRate = ((availableRooms / totalRooms) * 100).toFixed(2);
@@ -152,7 +145,6 @@ export const getOccupancyRate = async (req, res) => {
   }
 };
 
-// Revenue tracking
 export const getRevenueAnalytics = async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -167,7 +159,6 @@ export const getRevenueAnalytics = async (req, res) => {
       };
     }
 
-    // Get revenue from bookings
     const bookingRevenue = await Booking.aggregate([
       { $match: dateFilter },
       {
@@ -180,7 +171,6 @@ export const getRevenueAnalytics = async (req, res) => {
       }
     ]);
 
-    // Get revenue from services
     const serviceRevenue = await Booking.aggregate([
       { $match: dateFilter },
       { $unwind: "$extraServices" },
