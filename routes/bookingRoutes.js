@@ -15,15 +15,15 @@ import { bookingSchema } from "../validation/bookingValidation.js";
 
 const router = Router();
 
-router.get("/", getAllBookings);
-router.get("/:id", getBookingById);
+router.get("/", authenticateUser,getAllBookings);
+router.get("/:id",authenticateUser, getBookingById);
 
-router.post("/", authenticateUser, authRole(["customer","receptionist","admin"]), validate(bookingSchema), createBooking);
+router.post("/", authenticateUser, validate(bookingSchema), createBooking);
 
-router.put("/:id", authenticateUser, authRole(["admin","receptionist"]), updateBooking);
+router.put("/:id", authenticateUser, updateBooking);
 router.delete("/:id", authenticateUser, authRole(["admin","receptionist"]), deleteBooking);
 router.patch("/:id/checkin", authenticateUser, authRole(["admin","receptionist"]), checkIn);
 router.patch("/:id/checkout", authenticateUser, authRole(["admin","receptionist"]), checkOut);
-router.patch("/:id/cancel", authenticateUser, authRole(["customer","admin","receptionist"]), cancelBooking);
+router.patch("/:id/cancel", authenticateUser, cancelBooking);
 
 export default router;
