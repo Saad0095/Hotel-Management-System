@@ -1,6 +1,6 @@
+
 import Booking from "../models/booking.js";
 import Room from "../models/room.js";
-import Service from "../models/service.js";
 
 // Daily bookings report
 export const getDailyBookings = async (req, res) => {
