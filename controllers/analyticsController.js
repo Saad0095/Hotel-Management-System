@@ -1,110 +1,50 @@
-
 import Booking from "../models/booking.js";
 import Room from "../models/room.js";
 
 export const getDailyBookings = async (req, res) => {
   try {
-    const { date } = req.query;
-    const targetDate = date ? new Date(date) : new Date();
-    
-    const startOfDay = new Date(targetDate);
+    const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
-    
-    const endOfDay = new Date(targetDate);
+
+    const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
     const dailyBookings = await Booking.aggregate([
       {
         $match: {
-          createdAt: { $gte: startOfDay, $lte: endOfDay }
-        }
+          createdAt: { $gte: startOfDay, $lte: endOfDay },
+        },
       },
       {
         $lookup: {
           from: "rooms",
-          localField: "room",
+          localField: "rooms",
           foreignField: "_id",
-          as: "roomDetails"
-        }
+          as: "roomDetails",
+        },
       },
       {
         $lookup: {
           from: "users",
           localField: "user",
           foreignField: "_id",
-          as: "userDetails"
-        }
+          as: "userDetails",
+        },
       },
+      { $unwind: "$userDetails" },
       {
         $project: {
-          _id: 1,
-          checkInDate: 1,
-          checkOutDate: 1,
-          totalPrice: 1,
+          bookingId: "$_id",
+          user: "$userDetails.name",
+          email: "$userDetails.email",
+          rooms: "$roomDetails.roomNumber",
           status: 1,
-          roomNumber: { $arrayElemAt: ["$roomDetails.roomNumber", 0] },
-          userName: { $arrayElemAt: ["$userDetails.name", 0] }
-        }
-      }
+          createdAt: 1,
+        },
+      },
     ]);
 
-    const totalRevenue = dailyBookings.reduce((sum, booking) => sum + booking.totalPrice, 0);
-    const confirmedBookings = dailyBookings.filter(booking => booking.status === "confirmed").length;
-    const checkedInBookings = dailyBookings.filter(booking => booking.status === "checked-in").length;
-
-    res.json({
-      date: targetDate.toISOString().split('T')[0],
-      totalBookings: dailyBookings.length,
-      confirmedBookings,
-      checkedInBookings,
-      totalRevenue,
-      bookings: dailyBookings
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-export const getMonthlyBookings = async (req, res) => {
-  try {
-    const { year, month } = req.query;
-    const targetYear = parseInt(year) || new Date().getFullYear();
-    const targetMonth = parseInt(month) || new Date().getMonth() + 1;
-    
-    const startOfMonth = new Date(targetYear, targetMonth - 1, 1);
-    const endOfMonth = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
-
-    const monthlyBookings = await Booking.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startOfMonth, $lte: endOfMonth }
-        }
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-          count: { $sum: 1 },
-          revenue: { $sum: "$totalPrice" },
-          bookings: { $push: "$$ROOT" }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
-    const totalBookings = monthlyBookings.reduce((sum, day) => sum + day.count, 0);
-    const totalRevenue = monthlyBookings.reduce((sum, day) => sum + day.revenue, 0);
-    const averageDailyBookings = totalBookings / monthlyBookings.length;
-    const averageDailyRevenue = totalRevenue / monthlyBookings.length;
-
-    res.json({
-      year: targetYear,
-      month: targetMonth,
-      totalBookings,
-      totalRevenue,
-      averageDailyBookings: Math.round(averageDailyBookings * 100) / 100,
-      averageDailyRevenue: Math.round(averageDailyRevenue * 100) / 100,
-      dailyBreakdown: monthlyBookings
-    });
+    res.json(dailyBookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -114,9 +54,9 @@ export const getOccupancyRate = async (req, res) => {
   try {
     const { date } = req.query;
     const targetDate = date ? new Date(date) : new Date();
-    
+
     const totalRooms = await Room.countDocuments();
-    
+
     const bookedRooms = await Booking.countDocuments({
       checkInDate: { $lte: targetDate },
       checkOutDate: { $gte: targetDate },
@@ -124,7 +64,7 @@ export const getOccupancyRate = async (req, res) => {
     });
 
     const maintenanceRooms = await Room.countDocuments({ status: "maintenance" });
-    
+
     const availableRooms = totalRooms - bookedRooms - maintenanceRooms;
     const occupancyRate = ((bookedRooms / totalRooms) * 100).toFixed(2);
     const availabilityRate = ((availableRooms / totalRooms) * 100).toFixed(2);
@@ -145,65 +85,117 @@ export const getOccupancyRate = async (req, res) => {
   }
 };
 
+export const getMonthlyBookings = async (req, res) => {
+  try {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0);
+    endOfMonth.setHours(23, 59, 59, 999);
+
+    const monthlyBookings = await Booking.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+        },
+      },
+      {
+        $group: {
+          _id: { $dayOfMonth: "$createdAt" },
+          bookings: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    const totalBookings = monthlyBookings.reduce(
+      (sum, day) => sum + day.bookings,
+      0
+    );
+
+    const averageDailyBookings =
+      monthlyBookings.length > 0
+        ? totalBookings / monthlyBookings.length
+        : 0;
+
+    res.json({ monthlyBookings, totalBookings, averageDailyBookings });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 export const getRevenueAnalytics = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
-    
-    let dateFilter = {};
-    if (startDate && endDate) {
-      dateFilter = {
-        createdAt: {
-          $gte: new Date(startDate),
-          $lte: new Date(endDate)
-        }
-      };
-    }
-
-    const bookingRevenue = await Booking.aggregate([
-      { $match: dateFilter },
+    const roomRevenue = await Booking.aggregate([
+      { $unwind: "$rooms" },
+      {
+        $lookup: {
+          from: "rooms",
+          localField: "rooms",
+          foreignField: "_id",
+          as: "roomDetails",
+        },
+      },
+      { $unwind: "$roomDetails" },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$totalPrice" },
-          totalBookings: { $sum: 1 },
-          averageBookingValue: { $avg: "$totalPrice" }
-        }
-      }
+          totalRoomRevenue: { $sum: "$roomDetails.pricePerNight" },
+          totalRooms: { $sum: 1 },
+        },
+      },
     ]);
 
     const serviceRevenue = await Booking.aggregate([
-      { $match: dateFilter },
       { $unwind: "$extraServices" },
       {
         $lookup: {
           from: "services",
           localField: "extraServices",
           foreignField: "_id",
-          as: "serviceDetails"
-        }
+          as: "serviceDetails",
+        },
       },
+      { $unwind: "$serviceDetails" },
       {
         $group: {
           _id: null,
-          totalServiceRevenue: { $sum: { $arrayElemAt: ["$serviceDetails.price", 0] } },
-          totalServices: { $sum: 1 }
-        }
-      }
+          totalServiceRevenue: { $sum: "$serviceDetails.price" },
+          totalServices: { $sum: 1 },
+        },
+      },
     ]);
 
-    const totalRevenue = (bookingRevenue[0]?.totalRevenue || 0) + (serviceRevenue[0]?.totalServiceRevenue || 0);
-    const totalBookings = bookingRevenue[0]?.totalBookings || 0;
-    const averageBookingValue = bookingRevenue[0]?.averageBookingValue || 0;
-    const totalServices = serviceRevenue[0]?.totalServices || 0;
+    const totalRoomRevenue =
+      roomRevenue.length > 0 ? roomRevenue[0].totalRoomRevenue : 0;
+    const totalRooms =
+      roomRevenue.length > 0 ? roomRevenue[0].totalRooms : 0;
+
+    const totalServiceRevenue =
+      serviceRevenue.length > 0 ? serviceRevenue[0].totalServiceRevenue : 0;
+    const totalServices =
+      serviceRevenue.length > 0 ? serviceRevenue[0].totalServices : 0;
+
+    const totalRevenue = totalRoomRevenue + totalServiceRevenue;
+
+    const totalRoomsAvailable = await Room.countDocuments();
+    const bookedRooms = totalRooms;
+    const occupancyRate =
+      totalRoomsAvailable > 0
+        ? ((bookedRooms / totalRoomsAvailable) * 100).toFixed(2)
+        : 0;
 
     res.json({
-      period: startDate && endDate ? `${startDate} to ${endDate}` : "All time",
+      totalRoomRevenue,
+      totalServiceRevenue,
       totalRevenue,
-      bookingRevenue: bookingRevenue[0]?.totalRevenue || 0,
-      serviceRevenue: serviceRevenue[0]?.totalServiceRevenue || 0,
-      totalBookings,
+      occupancyRate,
       totalServices,
-      averageBookingValue: Math.round(averageBookingValue * 100) / 100
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
