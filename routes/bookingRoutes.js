@@ -10,13 +10,15 @@ import {
   cancelBooking
 } from "../controllers/bookingController.js";
 import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
+import validate from "../middlewares/validateMiddleware.js";
+import { bookingSchema } from "../validation/bookingValidation.js";
 
 const router = Router();
 
 router.get("/", getAllBookings);
 router.get("/:id", getBookingById);
 
-router.post("/", authenticateUser, authRole(["customer","receptionist","admin"]), createBooking);
+router.post("/", authenticateUser, authRole(["customer","receptionist","admin"]), validate(bookingSchema), createBooking);
 
 router.put("/:id", authenticateUser, authRole(["admin","receptionist"]), updateBooking);
 router.delete("/:id", authenticateUser, authRole(["admin","receptionist"]), deleteBooking);

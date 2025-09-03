@@ -9,10 +9,12 @@ import {
 } from "../controllers/roomController.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import { authenticateUser, authRole } from "../middlewares/authMiddleware.js";
+import { roomSchema } from "../validation/roomValidation.js";
+import validate from "../middlewares/validateMiddleware.js";
 
 const router = Router();
 
-router.post("/", authenticateUser, authRole(["admin"]), upload.array("images",10), createRoom);
+router.post("/", authenticateUser, authRole(["admin"]), upload.array("images",10), validate(roomSchema), createRoom);
 router.put("/:id", authenticateUser, authRole(["admin"]), upload.array("images",10), updateRoom);
 router.delete("/:id", authenticateUser, authRole(["admin"]), deleteRoom);
 
