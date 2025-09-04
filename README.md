@@ -5,18 +5,16 @@ A comprehensive backend system for hotel management built with Node.js, Express,
 ## 🚀 Features
 
 ### ✅ Completed Modules
-- **Room Management** (Saad) - CRUD operations for hotel rooms
-- **User Management** (Noman) - Admin features and role-based access
-- **Booking System** (Noman) - Reservation with check-in/check-out
-- **Services Management** (Noman) - Extra services like laundry, taxi, spa
-- **Analytics & Reports** (Noman) - Daily/monthly reports, occupancy rates
-- **Authentication & Authorization** - JWT-based security with role control
-
-### ✅ Completed Modules
-- **User Authentication** (Ahmed) - Login/Register system
-
-✅ Completed
-- **Validation** (Ahmed) - Input validation and sanitization
+- **Authentication & Authorization** (Noman) - Admin + Customer register/login, JWT, role-based access
+- **Admin Analytics** (Noman) - Daily/monthly reports, occupancy, revenue
+- **Services Controller** (Noman) - CRUD for extra services (laundry, taxi, spa)
+- **Basic Booking Controller** (Noman) - Core booking flow (create/update/delete)
+- **Room + Booking + Services Schemas** (Saad) - Mongoose schemas
+- **Room Controller** (Saad) - Room CRUD
+- **Booking Controller (Complete)** (Saad) - End-to-end booking ops
+- **Receptionist Functionality** (Saad) - Desk ops for checkin/checkout/cancellation
+- **Booking Emails** (Saad) - Confirmation, check-in, check-out, cancellation emails
+- **Joi Validation** (Ahmed) - Request validation across modules
 
 ## 🏗️ Project Structure
 
@@ -45,7 +43,9 @@ A comprehensive backend system for hotel management built with Node.js, Express,
 │   └── analyticsRoutes.js
 ├── seed/                # Sample data
 │   ├── seedRooms.js
-│   └── seedServices.js
+│   ├── seedServices.js
+│   ├── seedUsers.js
+│   └── seedBookings.js
 └── uploads/             # File storage
 ```
 
@@ -135,18 +135,27 @@ All protected routes require `Authorization: Bearer <token>` header.
 - `GET /api/analytics/occupancy-rate` - Room occupancy analytics
 - `GET /api/analytics/revenue` - Revenue tracking
 
-## 🔒 Role-Based Access Control
+## 🧑‍💼 Roles
 
-### 👤 Customer
+### Receptionist
+- Manage front-desk bookings
+- Process check-in and check-out
+- Handle booking cancellations per policy
+- View room availability overview
+
+### Customer
 - Create/view own bookings
 - View available rooms and services
 - Access own profile
 
-### 👨‍💼 Admin
+### Admin
 - Full access to all features
 - Manage users, rooms, bookings
 - View analytics and reports
 - Manage extra services
+
+## 🔒 Role-Based Access Control
+- Enforced via JWT and role middleware on protected routes (Admin/Receptionist/Customer)
 
 ## 📊 Data Models
 
@@ -220,6 +229,12 @@ curl -X POST http://localhost:3000/api/bookings/booking_id_here/checkin \
   -H "Authorization: Bearer <admin_token>"
 ```
 
+### Email Workflow
+- Booking Confirmation: sent on booking creation
+- Check-in Email: sent on successful check-in
+- Check-out Email: sent after check-out processing
+- Cancellation Email: sent upon booking cancellation
+
 ### Get Daily Analytics
 ```bash
 curl -X GET "http://localhost:3000/api/analytics/daily-bookings?date=2024-01-15" \
@@ -235,6 +250,12 @@ npm run seed:rooms
 
 # Seed services
 npm run seed:services
+
+# Seed users
+node seed/seedUsers.js
+
+# Seed bookings
+node seed/seedBookings.js
 ```
 
 ### Environment Variables
@@ -246,9 +267,9 @@ Make sure to set up your `.env` file with:
 ## 🤝 Contributing
 
 ### Team Members
-- **Saad** - Room Management & CRUD
-- **Ahmed** - User Authentication & Validation
-- **Noman** - User Management, Booking System, Analytics, Services
+- **Noman** - Admin + Customer Auth, Authorization, Admin Analytics, Services, Basic Booking Controller
+- **Saad** - Schemas (Room/Booking/Services), Room Controller, Booking Controller (Complete), Receptionist Functionality, Booking Emails
+- **Ahmed** - Joi Validation only
 
 ### Development Rules
 1. Don't overwrite existing modules
