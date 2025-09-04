@@ -184,7 +184,9 @@ export const getRevenueAnalytics = async (req, res) => {
     const totalRevenue = totalRoomRevenue + totalServiceRevenue;
 
     const totalRoomsAvailable = await Room.countDocuments();
-    const bookedRooms = totalRooms;
+    const bookedRooms = await Booking.countDocuments({
+      status: { $in: ["confirmed", "checked-in"] }
+    });
     const occupancyRate =
       totalRoomsAvailable > 0
         ? ((bookedRooms / totalRoomsAvailable) * 100).toFixed(2)

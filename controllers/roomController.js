@@ -63,7 +63,20 @@ export const updateRoom = async (req, res) => {
 export const deleteRoom = async (req, res) => {
   try {
     const room = await Room.findById(req.params.id);
-    if (!room) return res.status(404).json({ message: "Rooom Not Found!" });
+    if (!room) return res.status(404).json({ message: "Room Not Found!" });
+    
+  
+    const activeBookings = await Booking.countDocuments({
+      rooms: req.params.id,
+      status: { $in: ["confirmed", "checked-in"] }
+    });
+    
+    if (activeBookings > 0) {
+      return res.status(400).json({ 
+        message: "Cannot delete room with active bookings!" 
+      });
+    }
+    
     await Room.findByIdAndDelete(req.params.id);
     res.json({ message: "Room Deleted Successfully!" });
   } catch (error) {

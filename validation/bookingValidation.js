@@ -28,7 +28,7 @@ export const bookingSchema = Joi.object({
     )
   ),
 
-  checkInDate: Joi.date().greater("now").required(),
+  checkInDate: Joi.date().min('now').required(),
   checkOutDate: Joi.date().greater(Joi.ref("checkInDate")).required(),
 
   status: Joi.string()

@@ -42,6 +42,7 @@ export const createBooking = async (req, res) => {
       rooms: { $in: rooms },
       checkInDate: { $lt: checkOut },
       checkOutDate: { $gt: checkIn },
+      status: { $in: ["confirmed", "checked-in"] }
     });
 
     if (alreadyBooked.length > 0) {
@@ -77,16 +78,24 @@ export const createBooking = async (req, res) => {
       extraServices,
     });
 
-    await Room.updateMany({ _id: { $in: rooms } }, { status: "booked" });
+  
+    if (booking.status === "confirmed") {
+      await Room.updateMany({ _id: { $in: rooms } }, { status: "booked" });
+    }
 
     const customer = await User.findById(userId);
-    await sendBookingConfirmation(
-      customer.email,
-      booking,
-      customer,
-      roomData,
-      services
-    );
+    try {
+      await sendBookingConfirmation(
+        customer.email,
+        booking,
+        customer,
+        roomData,
+        services
+      );
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      
+    }
 
     res.status(201).json({ message: "Booking created successfully!", booking });
   } catch (error) {
@@ -173,6 +182,7 @@ export const updateBooking = async (req, res) => {
       rooms: { $in: booking.rooms },
       checkInDate: { $lt: checkOut },
       checkOutDate: { $gt: checkIn },
+      status: { $in: ["confirmed", "checked-in"] }
     });
 
     if (conflict) {
