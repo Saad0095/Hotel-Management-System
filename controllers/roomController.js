@@ -1,4 +1,5 @@
 import Room from "../models/room.js";
+import Booking from "../models/booking.js"
 
 export const createRoom = async (req, res) => {
   try {
